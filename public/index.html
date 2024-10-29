@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課程資料</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<h1>查詢課程資料</h1>
+
+<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
+<button id="searchButton">查詢</button>
+
+<table>
+    <thead>
+    <tr>
+        <th>課程代碼</th>
+        <th>學分</th>
+        <th>最多人數</th>
+        <th>目前人數</th>
+        <th>必選修</th>
+        <th>課程名稱</th>
+        <th>年級</th>
+        <th>系所</th>
+        <th>課程詳細信息</th>
+    </tr>
+    </thead>
+    <tbody id="courseTableBody"></tbody>
+</table>
+
+<script>
+    // 查詢課程資料
+    document.getElementById('searchButton').addEventListener('click', () => {
+        const id = document.getElementById('courseIdInput').value;
+        fetch('/api/courses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('課程未找到');
+                }
+                return response.json();
+            })
+            .then(course => {
+                const tbody = document.getElementById('courseTableBody');
+                tbody.innerHTML = ''; // 清空之前的資料
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td>${course.id}</td>
+                <td>${course.credit}</td>
+                <td>${course.most_people}</td>
+                <td>${course.now_people}</td>
+                <td>${course.required_elective}</td>
+                <td>${course.name}</td>
+                <td>${course.grade}</td>
+                <td>${course.department}</td>
+                <td>${course.detail}</td>
+            `;
+                tbody.appendChild(row);
+                document.getElementById('courseIdInput').value = ''; // 清空輸入框
+            })
+            .catch(error => {
+                // 當找不到課程時顯示提示框並清空表格
+                alert("找不到該課程"); // 彈出提示框
+                document.getElementById('courseTableBody').innerHTML = ''; // 清空表格
+                document.getElementById('courseIdInput').value = ''; // 清空輸入框
+            });
+    });
+</script>
+</body>
+</html>
