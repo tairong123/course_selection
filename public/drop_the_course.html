@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>退選</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<h1>退選</h1>
+
+<table>
+    <thead>
+    <tr>
+        <th>課程代碼</th>
+        <th>退選</th>
+    </tr>
+    </thead>
+    <tbody id="courseTableBody"></tbody>
+</table>
+
+<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
+<button id="dropButton">退選</button>
+<button id="homeButton" onclick="goHome()">回首頁</button>
+
+<script>
+    const username = localStorage.getItem('User_now');
+
+    // 查詢學生的課程
+    fetch('/api/student-courses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: username })
+    })
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('courseTableBody');
+            data.forEach(course => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td>${course.course_id}</td>
+                <td><button onclick="dropCourse('${course.course_id}')">退選</button></td>
+            `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => console.error('錯誤:', error));
+
+    // 退選函數
+    function dropCourse(courseId) {
+        fetch('/api/drop-course', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username: username, courseId: courseId })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('退選成功');
+                    location.reload();
+                } else {
+                    // 根據伺服器回傳的訊息來顯示警告
+                    alert(data.message);
+
+                }
+            })
+            .catch(error => console.error('錯誤:', error));
+    }
+
+
+    function goHome() {
+        window.location.href = 'home.html';
+    }
+</script>
+
+</body>
+</html>
