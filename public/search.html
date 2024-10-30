@@ -1,10 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課程資料</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
+<h1>查詢課程資料</h1>
+
+<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
+<button id="searchButton">查詢</button>
+<button id="homeButton" onclick="goHome()">回首頁</button>
+
+<script>
+    // 查詢課程資料
+    const username = localStorage.getItem('User_now');
+    document.getElementById('searchButton').addEventListener('click', () => {
+        const id = document.getElementById('courseIdInput').value;
+        fetch('/api/courses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('課程未找到');
+                }
+                return response.json();
+            })
+            .then(course => {
+                // 將查詢的課程資料存入 localStorage
+                localStorage.setItem('courseData', JSON.stringify(course));
+                // 導向 search.html
+                window.location.href = 'search_result.html';
+            })
+            .catch(error => {
+                alert("找不到該課程");
+                document.getElementById('courseTableBody').innerHTML = '';
+                document.getElementById('courseIdInput').value = '';
+            });
+    });
+
+    function goHome() {
+        window.location.href = 'home.html';
+    }
+</script>
 
 </body>
 </html>

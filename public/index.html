@@ -3,87 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>課程資料</title>
+    <title>登入頁面</title>
     <style>
-        table {
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .login-container {
+            width: 300px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background-color: #ffffff;
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .login-container input[type="text"],
+        .login-container input[type="password"] {
             width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
+            padding: 10px;
+            margin: 10px 0;
             border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
-        th {
-            background-color: #f2f2f2;
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #5a67d8;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background-color: #434fdd;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            text-align: center;
+            display: none;
         }
     </style>
 </head>
 <body>
-<h1>查詢課程資料</h1>
-
-<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
-<button id="searchButton">查詢</button>
-
-<table>
-    <thead>
-    <tr>
-        <th>課程代碼</th>
-        <th>學分</th>
-        <th>最多人數</th>
-        <th>目前人數</th>
-        <th>必選修</th>
-        <th>課程名稱</th>
-        <th>年級</th>
-        <th>系所</th>
-        <th>課程詳細信息</th>
-    </tr>
-    </thead>
-    <tbody id="courseTableBody"></tbody>
-</table>
+<div class="login-container">
+    <h2>登入</h2>
+    <input type="text" id="username" placeholder="使用者名稱">
+    <input type="password" id="password" placeholder="密碼">
+    <button onclick="login()">登入</button>
+    <p class="error-message" id="errorMessage">使用者名稱或密碼錯誤</p>
+</div>
 
 <script>
-    // 查詢課程資料
-    document.getElementById('searchButton').addEventListener('click', () => {
-        const id = document.getElementById('courseIdInput').value;
-        fetch('/api/courses', {
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        localStorage.setItem('User_now', username);
+        // 發送登入請求到後端的 /api/login 路由
+        fetch('/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ id: id })
+            body: JSON.stringify({ username, password })
         })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('課程未找到');
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+
+
+                    alert('登入成功');
+                    window.location.href = 'search.html'; // 導向首頁
+                } else {
+                    const errorMessage = document.getElementById('errorMessage');
+                    errorMessage.style.display = 'block';
                 }
-                return response.json();
-            })
-            .then(course => {
-                const tbody = document.getElementById('courseTableBody');
-                tbody.innerHTML = ''; // 清空之前的資料
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                <td>${course.id}</td>
-                <td>${course.credit}</td>
-                <td>${course.most_people}</td>
-                <td>${course.now_people}</td>
-                <td>${course.required_elective}</td>
-                <td>${course.name}</td>
-                <td>${course.grade}</td>
-                <td>${course.department}</td>
-                <td>${course.detail}</td>
-            `;
-                tbody.appendChild(row);
-                document.getElementById('courseIdInput').value = ''; // 清空輸入框
             })
             .catch(error => {
-                // 當找不到課程時顯示提示框並清空表格
-                alert("找不到該課程"); // 彈出提示框
-                document.getElementById('courseTableBody').innerHTML = ''; // 清空表格
-                document.getElementById('courseIdInput').value = ''; // 清空輸入框
+                console.error('登入錯誤:', error);
+                alert('登入時發生錯誤，請稍後再試');
             });
-    });
+    }
 </script>
 </body>
 </html>

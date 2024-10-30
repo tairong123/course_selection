@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>查詢結果</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    #backButton, #homeButton {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<h1>課程查詢結果</h1>
+
+<table>
+  <thead>
+  <tr>
+    <th>課程代碼</th>
+    <th>學分</th>
+    <th>最多人數</th>
+    <th>目前人數</th>
+    <th>必選修</th>
+    <th>課程名稱</th>
+    <th>年級</th>
+    <th>系所</th>
+    <th>課程詳細信息</th>
+  </tr>
+  </thead>
+  <tbody id="courseTableBody"></tbody>
+</table>
+
+<!-- 回查詢頁面與回首頁按鈕 -->
+<button id="backButton" onclick="goBack()">回查詢</button>
+<button id="homeButton" onclick="goHome()">回首頁</button>
+
+<script>
+  // 從 localStorage 中取得課程資料並顯示
+  const courseData = JSON.parse(localStorage.getItem('courseData'));
+  const username = localStorage.getItem('User_now');
+
+  if (courseData) {
+    const tbody = document.getElementById('courseTableBody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+            <td>${courseData.id}</td>
+            <td>${courseData.credit}</td>
+            <td>${courseData.most_people}</td>
+            <td>${courseData.now_people}</td>
+            <td>${courseData.required_elective}</td>
+            <td>${courseData.name}</td>
+            <td>${courseData.grade}</td>
+            <td>${courseData.department}</td>
+            <td>${courseData.detail}</td>
+        `;
+    tbody.appendChild(row);
+
+    // 顯示完後清除 localStorage 中的資料
+    localStorage.removeItem('courseData');
+  } else {
+    alert("未找到課程資料");
+  }
+
+  // 回查詢頁面函數
+  function goBack() {
+    window.location.href = 'search.html';
+  }
+
+  // 回首頁函數
+  function goHome() {
+    window.location.href = 'home.html';
+  }
+</script>
+</body>
+</html>

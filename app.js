@@ -18,15 +18,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
+// 連接 course 資料庫
 var db = new sqlite3.Database(path.join(__dirname, 'db', 'course.db'), (err) => {
   if (err) {
     console.error('資料庫連接失敗:', err.message);
   } else {
-    console.log('已成功連接到 SQLite3 資料庫。');
+    console.log('已成功連接到 course 資料庫。');
   }
 });
 
-// 登錄路由
+// 連接 students 資料庫
+var students_db = new sqlite3.Database(path.join(__dirname, 'db', 'students.db'), (err) => {
+  if (err) {
+    console.error('資料庫連接失敗:', err.message);
+  } else {
+    console.log('已成功連接到 students 資料庫。');
+  }
+});
+
+// 查詢課程資料路由
 app.post('/api/courses', (req, res) => {
   let { id } = req.body;
   let sql = 'SELECT * FROM course WHERE id = ?';
@@ -38,6 +48,24 @@ app.post('/api/courses', (req, res) => {
       res.json(row[0]);
     } else {
       res.send({ success: false, message: '無效的憑證' });
+    }
+  });
+});
+
+// 登入路由
+app.post('/api/login', (req, res) => {
+  let { username, password } = req.body;
+  let sql = 'SELECT * FROM students WHERE id = ? AND password = ?';
+
+  students_db.get(sql, [username, password], (err, row) => {
+    if (err) {
+      return res.status(500).send({ message: '資料庫錯誤' });
+    }
+    console.log(row);
+    if (row) {
+      res.send({ success: true, message: '登入成功' });
+    } else {
+      res.send({ success: false, message: '使用者名稱或密碼錯誤' });
     }
   });
 });
