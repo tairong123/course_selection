@@ -94,8 +94,8 @@ app.post('/api/student-courses', (req, res) => {
 app.post('/api/drop-course', (req, res) => {
   const { username, courseId } = req.body;
 
-  const getStudentCreditsSql = 'SELECT credit FROM students WHERE id = ?';
-  const getCourseInfoSql = 'SELECT credit, required_elective FROM course WHERE id = ?';
+  const getStudentCreditsSql = 'SELECT credit, department FROM students WHERE id = ?';
+  const getCourseInfoSql = 'SELECT credit, required_elective, department FROM course WHERE id = ?';
   const deleteCourseSql = 'DELETE FROM schedule WHERE student_id = ? AND course_id = ?';
   const updateStudentCreditsSql = 'UPDATE students SET credit = ? WHERE id = ?';
 
@@ -118,11 +118,11 @@ app.post('/api/drop-course', (req, res) => {
       const newTotalCredits = currentTotalCredits - courseCredit;
 
       // 檢查退選後的學分是否大於 9
-      if (newTotalCredits < 9) {
+      if (newTotalCredits <= 9) {
         return res.send({ success: false, message: '學分不夠，無法退選' });
       }
       // 檢查是否為必修課
-      if (isRequired) {
+      if (isRequired && studentRow.department ===  courseRow.department) {
         return res.send({ success: false, message: '必修課程無法退選' });
       }
       // 執行退選操作
