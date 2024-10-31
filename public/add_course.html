@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加選課程</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        /* 課表樣式 */
+        .course-table {
+            margin-bottom: 30px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .course-table th,
+        .course-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .course-table th {
+            background-color: #f2f2f2;
+        }
+
+        /* 選課列表樣式 */
+        .add-course-table {
+            margin-top: 30px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .add-course-table th {
+            border-bottom: 2px solid #000;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .add-course-table th:first-child {
+            width: 100px;
+        }
+
+        .add-course-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .home-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .home-btn:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+<h1>加選</h1>
+<div>
+    <strong>已選學分: <span id="selectedCredits">0</span></strong>
+</div>
+<!-- 課表 -->
+<table class="course-table">
+    <thead>
+    <tr>
+        <th>節次</th>
+        <th>週一</th>
+        <th>週二</th>
+        <th>週三</th>
+        <th>週四</th>
+        <th>週五</th>
+    </tr>
+    </thead>
+    <tbody id="scheduleBody">
+    <!-- 由 JavaScript 填充 -->
+    </tbody>
+</table>
+
+<!-- 加選課程列表 -->
+<input type="text" id="courseInput" placeholder="課程代碼或名稱">
+<button id="addCourseBtn" class="btn">加選課程</button>
+<table class="add-course-table">
+    <thead>
+    <tr>
+        <th>課程代碼</th>
+        <th>課程名稱</th>
+        <th>授課教師</th>
+        <th>學分</th>
+        <th>必選修</th>
+        <th>加選</th>
+    </tr>
+    </thead>
+    <tbody id="courseList">
+    <!-- 由 JavaScript 填充 -->
+    </tbody>
+</table>
+
+
+<a href="index.html" class="home-btn">回首頁</a>
+
+<script>
+    // 獲取用戶資訊
+    const username = localStorage.getItem('User_now');
+    // 建立課表
+    function createScheduleTable() {
+        const scheduleBody = document.getElementById('scheduleBody');
+        for (let period = 0; period < 14; period++) {
+            const row = document.createElement('tr');
+
+            // 節次
+            const periodCell = document.createElement('td');
+            periodCell.textContent = `${period + 1}`;
+            row.appendChild(periodCell);
+
+            // 每天的課程格子
+            for (let day = 0; day < 5; day++) {
+                const cell = document.createElement('td');
+                cell.setAttribute('data-day', day);
+                cell.setAttribute('data-period', period);
+                row.appendChild(cell);
+            }
+
+            scheduleBody.appendChild(row);
+        }
+    }
+
+    // 載入課表
+    async function loadSchedule() {
+        try {
+            console.log('Fetching schedule data...');
+            const response = await fetch('/api/get-schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username })
+            });
+
+            const data = await response.json();
+            console.log('Received schedule data:', data);
+
+            if (data.success) {
+                displaySchedule(data.schedule);
+            } else {
+                console.error('Failed to load schedule:', data.message);
+            }
+        } catch (error) {
+            console.error('Error loading schedule:', error);
+        }
+    }
+
+    // 顯示課表
+    function displaySchedule(schedule) {
+        console.log('Displaying schedule:', schedule);
+
+        schedule.forEach((daySchedule, day) => {
+            console.log(`Processing day ${day}:`, daySchedule);
+
+            daySchedule.forEach((course, period) => {
+                if (course) {
+                    console.log(`Found course at day ${day}, period ${period}:`, course);
+
+                    const cell = document.querySelector(
+                        `[data-day="${day}"][data-period="${period}"]`
+                    );
+
+                    if (cell) {
+                        cell.textContent = course.name;
+                        console.log(`Updated cell content for day ${day}, period ${period}`);
+                    } else {
+                        console.error(`Could not find cell for day ${day}, period ${period}`);
+                    }
+                }
+            });
+        });
+    }
+
+    // 初始化頁面
+    document.addEventListener('DOMContentLoaded', () => {
+        createScheduleTable();
+        loadSchedule();
+    });
+</script>
+</body>
+</html>

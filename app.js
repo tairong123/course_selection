@@ -150,9 +150,79 @@ app.post('/api/drop-course', (req, res) => {
   });
 });
 
+// 在 app.js 中修改 get-schedule 路由，加入除錯訊息
 
+app.post('/api/get-schedule', (req, res) => {
+  const { username } = req.body;
+  console.log('Fetching schedule for user:', username);
 
+  // 從 schedule 獲取學生的選課資料
+  const scheduleSql = 'SELECT course_id FROM schedule WHERE student_id = ?';
 
+  schedule_db.all(scheduleSql, [username], (err, scheduleRows) => {
+    if (err) {
+      console.error('Schedule database error:', err);
+      return res.status(500).send({ message: '無法獲取選課資料' });
+    }
 
+    console.log('Schedule rows found:', scheduleRows);
+
+    if (!scheduleRows || scheduleRows.length === 0) {
+      console.log('No courses found for user');
+      return res.json({
+        success: true,
+        schedule: Array(5).fill().map(() => Array(14).fill(null))
+      });
+    }
+
+    // 獲取所有課程 ID
+    const courseIds = scheduleRows.map(row => row.course_id);
+    console.log('Course IDs to fetch:', courseIds);
+
+    // 從 course 資料庫獲取課程詳細資訊
+    const courseQuery = `SELECT id, name, time1, time2, time3 FROM course WHERE id IN (${courseIds.map(() => '?').join(',')})`;
+
+    db.all(courseQuery, courseIds, (err, courseRows) => {
+      if (err) {
+        console.error('Course database error:', err);
+        return res.status(500).send({ message: '無法獲取課程資料' });
+      }
+
+      console.log('Course details found:', courseRows);
+
+      // 創建空的課表
+      const schedule = Array(5).fill().map(() => Array(14).fill(null));
+
+      // 填充課表
+      courseRows.forEach(course => {
+        const times = [course.time1, course.time2, course.time3];
+        console.log(`Processing course ${course.id} (${course.name}) with times:`, times);
+
+        times.forEach(time => {
+          if (time && time > 0) {
+            const day = Math.floor((time - 1) / 14); // 0-4 代表週一到週五
+            const period = ((time - 1) % 14); // 0-13 代表第幾節課
+
+            console.log(`Time ${time} maps to day ${day}, period ${period}`);
+
+            if (day >= 0 && day < 5 && period >= 0 && period < 14) {
+              schedule[day][period] = {
+                courseId: course.id,
+                name: course.name
+              };
+            }
+          }
+        });
+      });
+
+      console.log('Final schedule:', schedule);
+
+      res.json({
+        success: true,
+        schedule: schedule
+      });
+    });
+  });
+});
 
 module.exports = app;
