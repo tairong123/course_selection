@@ -5,46 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>退選</title>
     <style>
-        table {
-            width: 100%;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .course-table, .drop-course-table {
             border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 30px;
         }
-        th, td {
-            border: 1px solid #ddd;
+        .course-table th, .course-table td,
+        .drop-course-table th, .drop-course-table td {
+            border: 1px solid #000;
             padding: 8px;
-            text-align: left;
+            text-align: center;
         }
-        th {
+        .course-table th, .drop-course-table th {
             background-color: #f2f2f2;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .home-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+        .home-btn:hover {
+            background-color: #444;
         }
     </style>
 </head>
 <body>
 <h1>退選</h1>
+<div>
+    <strong>已選學分: <span id="selectedCredits">0</span></strong>
+</div>
+<!-- 課表 -->
+<table class="course-table">
+    <thead>
+    <tr>
+        <th>節次</th>
+        <th>週一</th>
+        <th>週二</th>
+        <th>週三</th>
+        <th>週四</th>
+        <th>週五</th>
+    </tr>
+    </thead>
+    <tbody id="scheduleBody">
+    <!-- 由 JavaScript 填充 -->
+    </tbody>
+</table>
 
-<table>
+<table class="drop-course-table">
     <thead>
     <tr>
         <th>課程代碼</th>
         <th>退選</th>
     </tr>
     </thead>
-    <tbody id="courseTableBody"></tbody>
+    <tbody id="courseTableBody">
+    <!-- 由 JavaScript 填充 -->
+    </tbody>
 </table>
 
-<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
-<button id="dropButton">退選</button>
-<button id="homeButton" onclick="goHome()">回首頁</button>
+<a href="home.html" class="home-btn">回首頁</a>
 
 <script>
     const username = localStorage.getItem('User_now');
 
-    // 查詢學生的課程
+    function createScheduleTable() {
+        const scheduleBody = document.getElementById('scheduleBody');
+        for (let period = 0; period < 14; period++) {
+            const row = document.createElement('tr');
+            const periodCell = document.createElement('td');
+            periodCell.textContent = `${period + 1}`;
+            row.appendChild(periodCell);
+            for (let day = 0; day < 5; day++) {
+                const cell = document.createElement('td');
+                cell.setAttribute('data-day', day);
+                cell.setAttribute('data-period', period);
+                row.appendChild(cell);
+            }
+            scheduleBody.appendChild(row);
+        }
+    }
+
+    async function loadSchedule() {
+        try {
+            const response = await fetch('/api/get-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await response.json();
+            if (data.success) displaySchedule(data.schedule);
+        } catch (error) { console.error('Error loading schedule:', error); }
+    }
+
+    function displaySchedule(schedule) {
+        schedule.forEach((daySchedule, day) => {
+            daySchedule.forEach((course, period) => {
+                if (course) {
+                    const cell = document.querySelector(`[data-day="${day}"][data-period="${period}"]`);
+                    if (cell) cell.textContent = course.name;
+                }
+            });
+        });
+    }
+
     fetch('/api/student-courses', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username })
     })
         .then(response => response.json())
@@ -54,20 +143,17 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                 <td>${course.course_id}</td>
-                <td><button onclick="dropCourse('${course.course_id}')">退選</button></td>
+                <td><button onclick="dropCourse('${course.course_id}')" class="btn">退選</button></td>
             `;
                 tbody.appendChild(row);
             });
         })
         .catch(error => console.error('錯誤:', error));
 
-    // 退選函數
     function dropCourse(courseId) {
         fetch('/api/drop-course', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username, courseId: courseId })
         })
             .then(response => response.json())
@@ -76,19 +162,16 @@
                     alert('退選成功');
                     location.reload();
                 } else {
-                    // 根據伺服器回傳的訊息來顯示警告
                     alert(data.message);
-
                 }
             })
             .catch(error => console.error('錯誤:', error));
     }
 
-
-    function goHome() {
-        window.location.href = 'home.html';
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        createScheduleTable();
+        loadSchedule();
+    });
 </script>
-
 </body>
 </html>
