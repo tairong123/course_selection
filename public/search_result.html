@@ -39,6 +39,7 @@
     <th>課程名稱</th>
     <th>年級</th>
     <th>系所</th>
+    <th>前置課程(課程代碼)</th>
     <th>課程詳細信息</th>
   </tr>
   </thead>
@@ -66,6 +67,7 @@
             <td>${courseData.name}</td>
             <td>${courseData.grade}</td>
             <td>${courseData.department}</td>
+            <td>${courseData.needed}</td>
             <td>${courseData.detail}</td>
         `;
     tbody.appendChild(row);

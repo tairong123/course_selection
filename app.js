@@ -44,6 +44,14 @@ var schedule_db = new sqlite3.Database(path.join(__dirname, 'db', 'schedule.db')
   }
 });
 
+var prefix_db = new sqlite3.Database(path.join(__dirname, 'db', 'prefix.db'), (err) => {
+  if (err) {
+    console.error('資料庫連接失敗:', err.message);
+  } else {
+    console.log('已成功連接到 prefix 資料庫。');
+  }
+});
+
 // 查詢課程資料路由
 app.post('/api/courses', (req, res) => {
   let { id } = req.body;
@@ -245,116 +253,136 @@ app.post('/api/student-credits', (req, res) => {
   });
 });
 
-
-
 app.post('/api/add-course', (req, res) => {
   const { username, courseId } = req.body;
 
   const getStudentCreditsSql = 'SELECT credit FROM students WHERE id = ?';
-  const getCourseInfoSql = 'SELECT credit, required_elective, most_people, now_people, time1, time2, time3,name FROM course WHERE id = ?';
+  const getCourseInfoSql = 'SELECT credit, required_elective, most_people, now_people, time1, time2, time3, name, needed FROM course WHERE id = ?';
   const insertScheduleSql = 'INSERT INTO schedule (student_id, course_id) VALUES (?, ?)';
   const updateStudentCreditsSql = 'UPDATE students SET credit = ? WHERE id = ?';
   const updateCoursePeopleSql = 'UPDATE course SET now_people = now_people + 1 WHERE id = ?';
 
-  // 查詢學生的總學分
-  students_db.get(getStudentCreditsSql, [username], (err, studentRow) => {
+  // Step 1: Check if the course is already selected
+  const checkIfCourseSelectedSql = 'SELECT COUNT(*) AS count FROM schedule WHERE student_id = ? AND course_id = ?';
+
+  schedule_db.get(checkIfCourseSelectedSql, [username, courseId], (err, row) => {
     if (err) {
-      return res.status(500).send({ message: '無法查詢學生學分' });
+      return res.status(500).send({ message: '無法查詢已選課程' });
+    }
+    if (row.count > 0) {
+      return res.send({ success: false, message: '你已選過該課程' });
     }
 
-    const currentTotalCredits = studentRow.credit || 0;
-
-    // 查詢欲加選課程的資訊
+    // Step 2: Get course info
     db.get(getCourseInfoSql, [courseId], (err, courseRow) => {
       if (err || !courseRow) {
         return res.status(500).send({ message: '無法查詢課程資料' });
       }
 
-      const courseCredit = courseRow.credit;
-      const courseName = courseRow.name;
-      const mostPeople = courseRow.most_people;
-      const nowPeople = courseRow.now_people;
+      const { credit: courseCredit, name: courseName, most_people: mostPeople, now_people: nowPeople, needed } = courseRow;
       const courseTimes = [courseRow.time1, courseRow.time2, courseRow.time3].filter(time => time);
 
-      // 確認加選後學分不超過上限
-      if (currentTotalCredits + courseCredit > 30) {
-        return res.send({ success: false, message: '學分超過上限，無法加選' });
-      }
-
-      // 確認課程人數是否超過上限
-      if (nowPeople + 1 > mostPeople) {
-        return res.send({ success: false, message: '課程人數已滿，無法加選' });
-      }
-
-      // 步驟1: 獲取已選課程的 course_id
-      const getSelectedCourseIdsSql = 'SELECT course_id FROM schedule WHERE student_id = ?';
-
-      schedule_db.all(getSelectedCourseIdsSql, [username], (err, selectedCourses) => {
+      // Step 3: Check student total credits
+      students_db.get(getStudentCreditsSql, [username], (err, studentRow) => {
         if (err) {
-          console.error('無法查詢已選課程的 ID:', err);
-          return res.status(500).send({ message: '無法查詢已選課程的 ID' });
+          return res.status(500).send({ message: '無法查詢學生學分' });
         }
 
-        // 提取已選課程的 ID
-        const selectedCourseIds = selectedCourses.map(course => course.course_id);
+        const currentTotalCredits = studentRow.credit || 0;
 
+        // Ensure adding the course does not exceed the credit limit
+        if (currentTotalCredits + courseCredit > 30) {
+          return res.send({ success: false, message: '學分超過上限，無法加選' });
+        }
 
-        // 步驟2: 獲取已選課程的時間
-        const getSelectedCourseTimesSql = `SELECT time1, time2, time3, name FROM course WHERE id IN (${selectedCourseIds.join(',')})`;
+        // Check if course capacity is exceeded
+        if (nowPeople + 1 > mostPeople) {
+          return res.send({ success: false, message: '課程人數已滿，無法加選' });
+        }
 
-        db.all(getSelectedCourseTimesSql, [], (err, selectedCourseRows) => {
+        // Step 4: Get selected course IDs and times for schedule conflict check
+        const getSelectedCourseIdsSql = 'SELECT course_id FROM schedule WHERE student_id = ?';
+
+        schedule_db.all(getSelectedCourseIdsSql, [username], (err, selectedCourses) => {
           if (err) {
-            console.error('無法查詢已選課程的時間:', err);
-            return res.status(500).send({ message: '無法查詢已選課程的時間' });
+            return res.status(500).send({ message: '無法查詢已選課程' });
           }
 
-          // 提取已選課程的時間
-          const selectedCourseTimes = selectedCourseRows.flatMap(course => [course.time1, course.time2, course.time3]).filter(time => time);
-          const selectedCourseNames = selectedCourseRows.map(course => course.name);
-          // 步驟3: 檢查是否有衝堂
-          const hasConflict = courseTimes.some(newTime => selectedCourseTimes.includes(newTime));
-          const hasSameName = selectedCourseNames.includes(courseName);
+          const selectedCourseIds = selectedCourses.map(course => course.course_id);
+          const getSelectedCourseTimesSql = `SELECT time1, time2, time3, name FROM course WHERE id IN (${selectedCourseIds.join(',')})`;
 
-          if (hasConflict) {
-            return res.send({ success: false, message: '衝堂，該課程不能加選' });
-          }
-          if (hasSameName) {
-            return res.send({ success: false, message: '已選課程與欲選課程同名，無法加選' });
-          }
-
-          // 加入課程至課表
-          schedule_db.run(insertScheduleSql, [username, courseId], function (err) {
+          db.all(getSelectedCourseTimesSql, [], (err, selectedCourseRows) => {
             if (err) {
-              return res.status(500).send({ message: '資料庫錯誤' });
+              return res.status(500).send({ message: '無法查詢已選課程的時間' });
             }
 
-            // 更新學生學分
-            students_db.run(updateStudentCreditsSql, [currentTotalCredits + courseCredit, username], function (err) {
-              if (err) {
-                return res.status(500).send({ message: '無法更新學生學分' });
-              }
+            const selectedCourseTimes = selectedCourseRows.flatMap(course => [course.time1, course.time2, course.time3]).filter(time => time);
+            const selectedCourseNames = selectedCourseRows.map(course => course.name);
 
-              // 更新課程現在人數
-              db.run(updateCoursePeopleSql, [courseId], function (err) {
+            const hasConflict = courseTimes.some(newTime => selectedCourseTimes.includes(newTime));
+            const hasSameName = selectedCourseNames.includes(courseName);
+
+            if (hasConflict) {
+              return res.send({ success: false, message: '衝堂，該課程不能加選' });
+            }
+            if (hasSameName) {
+              return res.send({ success: false, message: '已選課程與欲選課程同名，無法加選' });
+            }
+
+            // Step 5: Check prerequisite requirements if any
+            if (needed) {
+              const checkPrerequisiteSql = 'SELECT COUNT(*) AS count FROM prefix WHERE student_id = ? AND course_id = ?';
+
+              prefix_db.get(checkPrerequisiteSql, [username, needed], (err, prerequisiteRow) => {
                 if (err) {
-                  return res.status(500).send({ message: '無法更新課程人數' });
+                  return res.status(500).send({ message: '無法查詢前置課程' });
+                }
+                if (prerequisiteRow.count === 0) {
+                  return res.send({ success: false, message: '你沒修過前置課程' });
                 }
 
-                res.send({
-                  success: true,
-                  message: '加選成功',
-                  totalCredits: currentTotalCredits + courseCredit
+                // Proceed to add the course if prerequisites are met
+                addCourse();
+              });
+            } else {
+              // Proceed to add the course if no prerequisites
+              addCourse();
+            }
+
+            function addCourse() {
+              // Add course to schedule
+              schedule_db.run(insertScheduleSql, [username, courseId], function (err) {
+                if (err) {
+                  return res.status(500).send({ message: '資料庫錯誤' });
+                }
+
+                // Update student credits
+                students_db.run(updateStudentCreditsSql, [currentTotalCredits + courseCredit, username], function (err) {
+                  if (err) {
+                    return res.status(500).send({ message: '無法更新學生學分' });
+                  }
+
+                  // Update course enrollment count
+                  db.run(updateCoursePeopleSql, [courseId], function (err) {
+                    if (err) {
+                      return res.status(500).send({ message: '無法更新課程人數' });
+                    }
+
+                    res.send({
+                      success: true,
+                      message: '加選成功',
+                      totalCredits: currentTotalCredits + courseCredit
+                    });
+                  });
                 });
               });
-            });
+            }
           });
         });
       });
     });
   });
 });
-
-
 
 
 
