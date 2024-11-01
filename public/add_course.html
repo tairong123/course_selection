@@ -204,6 +204,34 @@
         });
     }
 
+    //幫我根據輸入的courseId去執行
+    function addCourse(courseId) {
+        fetch('/api/add-course', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, courseId: courseId })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('加選成功');
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('錯誤:', error));
+    }
+
+    document.getElementById('addCourseBtn').addEventListener('click', () => {
+        const courseId = document.getElementById('courseInput').value;
+        if (courseId) {
+            addCourse(courseId);
+        } else {
+            alert('請輸入課程代碼或名稱');
+        }
+    });
+
     // 初始化頁面
     document.addEventListener('DOMContentLoaded', () => {
         createScheduleTable();

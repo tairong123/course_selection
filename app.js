@@ -78,19 +78,6 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-app.post('/api/student-courses', (req, res) => {
-  const { username } = req.body;
-  const sql = 'SELECT course_id FROM schedule WHERE student_id = ?';
-
-  schedule_db.all(sql, [username], (err, rows) => {
-    if (err) {
-      res.status(500).send({ message: '資料庫錯誤' });
-    } else {
-      res.json(rows); // 傳回查詢的課程資料
-    }
-  });
-});
-
 app.post('/api/drop-course', (req, res) => {
   const { username, courseId } = req.body;
 
@@ -98,6 +85,7 @@ app.post('/api/drop-course', (req, res) => {
   const getCourseInfoSql = 'SELECT credit, required_elective, department ,grade FROM course WHERE id = ?';
   const deleteCourseSql = 'DELETE FROM schedule WHERE student_id = ? AND course_id = ?';
   const updateStudentCreditsSql = 'UPDATE students SET credit = ? WHERE id = ?';
+  const decrementCoursePeopleSql = 'UPDATE course SET now_people = now_people - 1 WHERE id = ?';
 
   // 查詢學生當前的總學分
   students_db.get(getStudentCreditsSql, [username], (err, studentRow) => {
@@ -116,16 +104,17 @@ app.post('/api/drop-course', (req, res) => {
       const courseCredit = courseRow.credit;
       const isRequired = courseRow.required_elective === '必修';
       const newTotalCredits = currentTotalCredits - courseCredit;
-      console.log(newTotalCredits);
 
       // 檢查退選後的學分是否大於 9
       if (newTotalCredits < 9) {
         return res.send({ success: false, message: '學分不夠，無法退選' });
       }
+
       // 檢查是否為必修課
-      if (isRequired && studentRow.department ===  courseRow.department && studentRow.grade === courseRow.grade) {
+      if (isRequired && studentRow.department === courseRow.department && studentRow.grade === courseRow.grade) {
         return res.send({ success: false, message: '必修課程無法退選' });
       }
+
       // 執行退選操作
       schedule_db.run(deleteCourseSql, [username, courseId], function (err) {
         if (err) {
@@ -140,10 +129,17 @@ app.post('/api/drop-course', (req, res) => {
             return res.status(500).send({ message: '無法更新學生學分總和' });
           }
 
-          res.send({
-            success: true,
-            message: '退選成功',
-            totalCredits: newTotalCredits
+          // 減少課程人數
+          db.run(decrementCoursePeopleSql, [courseId], function (err) {
+            if (err) {
+              return res.status(500).send({ message: '無法更新課程人數' });
+            }
+
+            res.send({
+              success: true,
+              message: '退選成功',
+              totalCredits: newTotalCredits
+            });
           });
         });
       });
@@ -151,7 +147,19 @@ app.post('/api/drop-course', (req, res) => {
   });
 });
 
-// 在 app.js 中修改 get-schedule 路由，加入除錯訊息
+
+app.post('/api/student-courses', (req, res) => {
+  const { username } = req.body;
+  const sql = 'SELECT course_id FROM schedule WHERE student_id = ?';
+
+  schedule_db.all(sql, [username], (err, rows) => {
+    if (err) {
+      res.status(500).send({ message: '資料庫錯誤' });
+    } else {
+      res.json(rows); // 傳回查詢的課程資料
+    }
+  });
+});
 
 app.post('/api/get-schedule', (req, res) => {
   const { username } = req.body;
@@ -225,5 +233,75 @@ app.post('/api/get-schedule', (req, res) => {
     });
   });
 });
+
+
+app.post('/api/add-course', (req, res) => {
+  const { username, courseId } = req.body;
+
+  const getStudentCreditsSql = 'SELECT credit FROM students WHERE id = ?';
+  const getCourseInfoSql = 'SELECT credit, required_elective, most_people, now_people time1, time2, time3 FROM course WHERE id = ?';
+  const insertScheduleSql = 'INSERT INTO schedule (student_id, course_id) VALUES (?, ?)';
+  const updateStudentCreditsSql = 'UPDATE students SET credit = ? WHERE id = ?';
+  const updateCoursePeopleSql = 'UPDATE course SET now_people = now_people + 1 WHERE id = ?';
+
+  // 查詢學生的總學分
+  students_db.get(getStudentCreditsSql, [username], (err, studentRow) => {
+    if (err) {
+      return res.status(500).send({ message: '無法查詢學生學分' });
+    }
+
+    const currentTotalCredits = studentRow.credit || 0;
+
+    // 查詢欲加選課程的資訊
+    db.get(getCourseInfoSql, [courseId], (err, courseRow) => {
+      if (err || !courseRow) {
+        return res.status(500).send({ message: '無法查詢課程資料' });
+      }
+
+      const courseCredit = courseRow.credit;
+      const mostPeople = courseRow.most_people;
+      const nowPeople = courseRow.now_people;
+
+      // 確認加選後學分不超過上限
+      if (currentTotalCredits + courseCredit > 30) {
+        return res.send({ success: false, message: '學分超過上限，無法加選' });
+      }
+
+      // 確認課程人數是否超過上限
+      if (nowPeople + 1 >= mostPeople) {
+        return res.send({ success: false, message: '課程人數已滿，無法加選' });
+      }
+
+      // 加入課程至課表
+      schedule_db.run(insertScheduleSql, [username, courseId], function (err) {
+        if (err) {
+          return res.status(500).send({ message: '資料庫錯誤' });
+        }
+
+        // 更新學生學分
+        students_db.run(updateStudentCreditsSql, [currentTotalCredits + courseCredit, username], function (err) {
+          if (err) {
+            return res.status(500).send({ message: '無法更新學生學分' });
+          }
+
+          // 更新課程現在人數
+          db.run(updateCoursePeopleSql, [courseId], function (err) {
+            if (err) {
+              return res.status(500).send({ message: '無法更新課程人數' });
+            }
+
+            res.send({
+              success: true,
+              message: '加選成功',
+              totalCredits: currentTotalCredits + courseCredit
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+
 
 module.exports = app;
