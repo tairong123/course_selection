@@ -130,6 +130,24 @@
 <script>
     // 獲取用戶資訊
     const username = localStorage.getItem('User_now');
+    async function loadStudentCredits() {
+        try {
+            const response = await fetch('/api/student-credits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('selectedCredits').textContent = data.credits;
+            } else {
+                console.error('Failed to load credits:', data.message);
+            }
+        } catch (error) {
+            console.error('Error fetching student credits:', error);
+        }
+    }
     // 建立課表
     function createScheduleTable() {
         const scheduleBody = document.getElementById('scheduleBody');
@@ -236,6 +254,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         createScheduleTable();
         loadSchedule();
+        loadStudentCredits();
     });
 </script>
 </body>

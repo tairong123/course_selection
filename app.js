@@ -233,13 +233,25 @@ app.post('/api/get-schedule', (req, res) => {
     });
   });
 });
+app.post('/api/student-credits', (req, res) => {
+  const { username } = req.body;
+  const getCreditsSql = 'SELECT credit FROM students WHERE id = ?';
+
+  students_db.get(getCreditsSql, [username], (err, row) => {
+    if (err) {
+      return res.status(500).send({ message: '無法查詢學生學分' });
+    }
+    res.send({ success: true, credits: row.credit });
+  });
+});
+
 
 
 app.post('/api/add-course', (req, res) => {
   const { username, courseId } = req.body;
 
   const getStudentCreditsSql = 'SELECT credit FROM students WHERE id = ?';
-  const getCourseInfoSql = 'SELECT credit, required_elective, most_people, now_people time1, time2, time3 FROM course WHERE id = ?';
+  const getCourseInfoSql = 'SELECT credit, required_elective, most_people, now_people, time1, time2, time3,name FROM course WHERE id = ?';
   const insertScheduleSql = 'INSERT INTO schedule (student_id, course_id) VALUES (?, ?)';
   const updateStudentCreditsSql = 'UPDATE students SET credit = ? WHERE id = ?';
   const updateCoursePeopleSql = 'UPDATE course SET now_people = now_people + 1 WHERE id = ?';
@@ -259,8 +271,10 @@ app.post('/api/add-course', (req, res) => {
       }
 
       const courseCredit = courseRow.credit;
+      const courseName = courseRow.name;
       const mostPeople = courseRow.most_people;
       const nowPeople = courseRow.now_people;
+      const courseTimes = [courseRow.time1, courseRow.time2, courseRow.time3].filter(time => time);
 
       // 確認加選後學分不超過上限
       if (currentTotalCredits + courseCredit > 30) {
@@ -268,32 +282,70 @@ app.post('/api/add-course', (req, res) => {
       }
 
       // 確認課程人數是否超過上限
-      if (nowPeople + 1 >= mostPeople) {
+      if (nowPeople + 1 > mostPeople) {
         return res.send({ success: false, message: '課程人數已滿，無法加選' });
       }
 
-      // 加入課程至課表
-      schedule_db.run(insertScheduleSql, [username, courseId], function (err) {
+      // 步驟1: 獲取已選課程的 course_id
+      const getSelectedCourseIdsSql = 'SELECT course_id FROM schedule WHERE student_id = ?';
+
+      schedule_db.all(getSelectedCourseIdsSql, [username], (err, selectedCourses) => {
         if (err) {
-          return res.status(500).send({ message: '資料庫錯誤' });
+          console.error('無法查詢已選課程的 ID:', err);
+          return res.status(500).send({ message: '無法查詢已選課程的 ID' });
         }
 
-        // 更新學生學分
-        students_db.run(updateStudentCreditsSql, [currentTotalCredits + courseCredit, username], function (err) {
+        // 提取已選課程的 ID
+        const selectedCourseIds = selectedCourses.map(course => course.course_id);
+
+
+        // 步驟2: 獲取已選課程的時間
+        const getSelectedCourseTimesSql = `SELECT time1, time2, time3, name FROM course WHERE id IN (${selectedCourseIds.join(',')})`;
+
+        db.all(getSelectedCourseTimesSql, [], (err, selectedCourseRows) => {
           if (err) {
-            return res.status(500).send({ message: '無法更新學生學分' });
+            console.error('無法查詢已選課程的時間:', err);
+            return res.status(500).send({ message: '無法查詢已選課程的時間' });
           }
 
-          // 更新課程現在人數
-          db.run(updateCoursePeopleSql, [courseId], function (err) {
+          // 提取已選課程的時間
+          const selectedCourseTimes = selectedCourseRows.flatMap(course => [course.time1, course.time2, course.time3]).filter(time => time);
+          const selectedCourseNames = selectedCourseRows.map(course => course.name);
+          // 步驟3: 檢查是否有衝堂
+          const hasConflict = courseTimes.some(newTime => selectedCourseTimes.includes(newTime));
+          const hasSameName = selectedCourseNames.includes(courseName);
+
+          if (hasConflict) {
+            return res.send({ success: false, message: '衝堂，該課程不能加選' });
+          }
+          if (hasSameName) {
+            return res.send({ success: false, message: '已選課程與欲選課程同名，無法加選' });
+          }
+
+          // 加入課程至課表
+          schedule_db.run(insertScheduleSql, [username, courseId], function (err) {
             if (err) {
-              return res.status(500).send({ message: '無法更新課程人數' });
+              return res.status(500).send({ message: '資料庫錯誤' });
             }
 
-            res.send({
-              success: true,
-              message: '加選成功',
-              totalCredits: currentTotalCredits + courseCredit
+            // 更新學生學分
+            students_db.run(updateStudentCreditsSql, [currentTotalCredits + courseCredit, username], function (err) {
+              if (err) {
+                return res.status(500).send({ message: '無法更新學生學分' });
+              }
+
+              // 更新課程現在人數
+              db.run(updateCoursePeopleSql, [courseId], function (err) {
+                if (err) {
+                  return res.status(500).send({ message: '無法更新課程人數' });
+                }
+
+                res.send({
+                  success: true,
+                  message: '加選成功',
+                  totalCredits: currentTotalCredits + courseCredit
+                });
+              });
             });
           });
         });
@@ -301,6 +353,8 @@ app.post('/api/add-course', (req, res) => {
     });
   });
 });
+
+
 
 
 
