@@ -51,6 +51,24 @@
 <button id="homeButton" onclick="goHome()">回首頁</button>
 
 <script>
+  // Idle timeout to redirect to index.html after 10 minutes of inactivity
+  let idleTimer;
+  const idleTimeout = 10000; // 10 minutes in milliseconds
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      window.location.href = 'index.html';
+    }, idleTimeout);
+  }
+
+  // Reset the timer on any user interaction
+  window.onload = resetIdleTimer;
+  document.onmousemove = resetIdleTimer;
+  document.onkeypress = resetIdleTimer;
+  document.onscroll = resetIdleTimer;
+  document.onclick = resetIdleTimer;
+
   // 從 localStorage 中取得課程資料並顯示
   const courseData = JSON.parse(localStorage.getItem('courseData'));
   const username = localStorage.getItem('User_now');

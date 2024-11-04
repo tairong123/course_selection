@@ -128,6 +128,24 @@
 <a href="home.html" class="home-btn">回首頁</a>
 
 <script>
+    // Idle timeout to redirect to index.html after 10 minutes of inactivity
+    let idleTimer;
+    const idleTimeout = 600000; // 10 minutes in milliseconds
+
+    function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            window.location.href = 'index.html';
+        }, idleTimeout);
+    }
+
+    // Reset the timer on any user interaction
+    window.onload = resetIdleTimer;
+    document.onmousemove = resetIdleTimer;
+    document.onkeypress = resetIdleTimer;
+    document.onscroll = resetIdleTimer;
+    document.onclick = resetIdleTimer;
+
     // 獲取用戶資訊
     const username = localStorage.getItem('User_now');
     async function loadStudentCredits() {
@@ -148,6 +166,7 @@
             console.error('Error fetching student credits:', error);
         }
     }
+
     // 建立課表
     function createScheduleTable() {
         const scheduleBody = document.getElementById('scheduleBody');
@@ -174,7 +193,6 @@
     // 載入課表
     async function loadSchedule() {
         try {
-            console.log('Fetching schedule data...');
             const response = await fetch('/api/get-schedule', {
                 method: 'POST',
                 headers: {
@@ -184,8 +202,6 @@
             });
 
             const data = await response.json();
-            console.log('Received schedule data:', data);
-
             if (data.success) {
                 displaySchedule(data.schedule);
             } else {
@@ -198,31 +214,21 @@
 
     // 顯示課表
     function displaySchedule(schedule) {
-        console.log('Displaying schedule:', schedule);
-
         schedule.forEach((daySchedule, day) => {
-            console.log(`Processing day ${day}:`, daySchedule);
-
             daySchedule.forEach((course, period) => {
                 if (course) {
-                    console.log(`Found course at day ${day}, period ${period}:`, course);
-
                     const cell = document.querySelector(
                         `[data-day="${day}"][data-period="${period}"]`
                     );
-
                     if (cell) {
                         cell.textContent = course.name;
-                        console.log(`Updated cell content for day ${day}, period ${period}`);
-                    } else {
-                        console.error(`Could not find cell for day ${day}, period ${period}`);
                     }
                 }
             });
         });
     }
 
-    //幫我根據輸入的courseId去執行
+    //根據輸入的courseId加選課程
     function addCourse(courseId) {
         fetch('/api/add-course', {
             method: 'POST',
