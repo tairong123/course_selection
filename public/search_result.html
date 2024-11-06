@@ -5,23 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>查詢結果</title>
   <style>
+    /* 基本樣式 */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 2em;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* 表格樣式 */
     table {
       width: 100%;
+      max-width: 1000px;
       border-collapse: collapse;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加陰影 */
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #fff;
     }
+
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      padding: 12px;
       text-align: left;
     }
+
     th {
-      background-color: #f2f2f2;
+      background-color: #4CAF50;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
     }
+
+    td {
+      border-bottom: 1px solid #ddd;
+      color: #555;
+      text-align: center;
+    }
+
+    /* 按鈕樣式 */
     #backButton, #homeButton {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
+      color: white;
+      background-color: #4CAF50;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    #backButton:hover, #homeButton:hover {
+      background-color: #45a049;
+      transform: translateY(-2px);
+    }
+
+    /* 按鈕間距 */
+    #backButton {
+      margin-right: 10px;
     }
   </style>
 </head>
@@ -47,13 +101,15 @@
 </table>
 
 <!-- 回查詢頁面與回首頁按鈕 -->
-<button id="backButton" onclick="goBack()">回查詢</button>
-<button id="homeButton" onclick="goHome()">回首頁</button>
+<div>
+  <button id="backButton" onclick="goBack()">回查詢</button>
+  <button id="homeButton" onclick="goHome()">回首頁</button>
+</div>
 
 <script>
   // Idle timeout to redirect to index.html after 10 minutes of inactivity
   let idleTimer;
-  const idleTimeout = 10000; // 10 minutes in milliseconds
+  const idleTimeout = 600000; // 10 minutes in milliseconds
 
   function resetIdleTimer() {
     clearTimeout(idleTimer);
@@ -71,7 +127,6 @@
 
   // 從 localStorage 中取得課程資料並顯示
   const courseData = JSON.parse(localStorage.getItem('courseData'));
-  const username = localStorage.getItem('User_now');
 
   if (courseData) {
     const tbody = document.getElementById('courseTableBody');

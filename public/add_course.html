@@ -5,70 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>加選課程</title>
     <style>
+        /* 基本樣式 */
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f4f7f6; /* 柔和背景色 */
         }
-
         h1 {
             margin-bottom: 20px;
-        }
-
-        /* 課表樣式 */
-        .course-table {
-            margin-bottom: 30px;
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        .course-table th,
-        .course-table td {
-            border: 1px solid #000;
-            padding: 8px;
+            color: #333;
+            font-size: 2em;
             text-align: center;
         }
 
-        .course-table th {
-            background-color: #f2f2f2;
-        }
-
-        /* 選課列表樣式 */
-        .add-course-table {
-            margin-top: 30px;
+        /* 課表和選課列表的樣式 */
+        .course-table, .add-course-table {
             border-collapse: collapse;
             width: 100%;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加陰影 */
+            border-radius: 8px; /* 圓角 */
+            overflow: hidden;
+            background-color: #fff; /* 白色背景 */
+        }
+        .course-table th, .course-table td,
+        .add-course-table th, .add-course-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        .course-table th, .add-course-table th {
+            background-color: #4CAF50;
+            color: #fff;
+            font-weight: bold;
+        }
+        .course-table td, .add-course-table td {
+            color: #555;
         }
 
-        .add-course-table th {
-            border-bottom: 2px solid #000;
-            padding: 10px;
-            text-align: left;
-        }
-
-        .add-course-table th:first-child {
-            width: 100px;
-        }
-
-        .add-course-table td {
-            padding: 8px;
-            border-bottom: 1px solid #ccc;
-        }
-
+        /* 按鈕樣式 */
         .btn {
             background-color: #4CAF50;
             color: white;
-            padding: 5px 10px;
+            padding: 8px 12px;
             border: none;
             cursor: pointer;
             font-size: 14px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
-
         .btn:hover {
             background-color: #45a049;
         }
 
+        /* 返回首頁按鈕樣式 */
         .home-btn {
             display: inline-block;
             padding: 10px 20px;
@@ -76,10 +68,18 @@
             color: white;
             text-decoration: none;
             margin-top: 20px;
+            text-align: center;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
-
         .home-btn:hover {
             background-color: #444;
+        }
+
+        /* 學分文字樣式 */
+        #selectedCredits {
+            font-size: 1.2em;
+            color: #333;
         }
     </style>
 </head>
@@ -88,6 +88,7 @@
 <div>
     <strong>已選學分: <span id="selectedCredits">0</span></strong>
 </div>
+
 <!-- 課表 -->
 <table class="course-table">
     <thead>
@@ -116,14 +117,12 @@
         <th>授課教師</th>
         <th>學分</th>
         <th>必選修</th>
-        <th>加選</th>
     </tr>
     </thead>
     <tbody id="courseList">
     <!-- 由 JavaScript 填充 -->
     </tbody>
 </table>
-
 
 <a href="home.html" class="home-btn">回首頁</a>
 
@@ -170,12 +169,21 @@
     // 建立課表
     function createScheduleTable() {
         const scheduleBody = document.getElementById('scheduleBody');
+
+        // 每節課的時間表
+        const timeSlots = [
+            "8:00 ~ 9:00", "9:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00",
+            "12:00 ~ 13:00", "13:00 ~ 14:00", "14:00 ~ 15:00", "15:00 ~ 16:00",
+            "16:00 ~ 17:00", "17:00 ~ 18:00", "18:00 ~ 19:00", "19:00 ~ 20:00",
+            "20:00 ~ 21:00", "21:00 ~ 22:00"
+        ];
+
         for (let period = 0; period < 14; period++) {
             const row = document.createElement('tr');
 
-            // 節次
+            // 節次和時間
             const periodCell = document.createElement('td');
-            periodCell.textContent = `${period + 1}`;
+            periodCell.innerHTML = `<strong>${period + 1}</strong><br><small>${timeSlots[period]}</small>`;
             row.appendChild(periodCell);
 
             // 每天的課程格子

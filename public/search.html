@@ -5,31 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>課程資料</title>
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        /* 全局樣式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
         }
-        th, td {
+
+        h1 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 輸入框和按鈕樣式 */
+        input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
             border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+            border-radius: 5px;
+            margin-right: 10px;
+            transition: box-shadow 0.3s ease;
         }
-        th {
-            background-color: #f2f2f2;
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 5px rgba(81, 203, 238, 1);
+            border-color: #4CAF50;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        #homeButton {
+            background-color: #333;
+            margin-left: 10px;
+        }
+
+        #homeButton:hover {
+            background-color: #444;
         }
     </style>
 </head>
 <body>
 <h1>查詢課程資料</h1>
 
-<input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
-<button id="searchButton">查詢</button>
-<button id="homeButton" onclick="goHome()">回首頁</button>
+<div>
+    <input type="text" id="courseIdInput" placeholder="請輸入課程代碼">
+    <button id="searchButton">查詢</button>
+    <button id="homeButton" onclick="goHome()">回首頁</button>
+</div>
 
 <script>
     // Idle timeout to redirect to index.html after 10 minutes of inactivity
     let idleTimer;
-    const idleTimeout = 10000; // 10 minutes in milliseconds
+    const idleTimeout = 600000; // 10 minutes in milliseconds
 
     function resetIdleTimer() {
         clearTimeout(idleTimer);
@@ -65,12 +116,11 @@
             .then(course => {
                 // 將查詢的課程資料存入 localStorage
                 localStorage.setItem('courseData', JSON.stringify(course));
-                // 導向 search.html
+                // 導向 search_result.html
                 window.location.href = 'search_result.html';
             })
             .catch(error => {
                 alert("找不到該課程");
-                document.getElementById('courseTableBody').innerHTML = '';
                 document.getElementById('courseIdInput').value = '';
             });
     });
@@ -79,6 +129,5 @@
         window.location.href = 'home.html';
     }
 </script>
-
 </body>
 </html>

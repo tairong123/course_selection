@@ -158,16 +158,45 @@ app.post('/api/drop-course', (req, res) => {
 
 app.post('/api/student-courses', (req, res) => {
   const { username } = req.body;
-  const sql = 'SELECT course_id FROM schedule WHERE student_id = ?';
 
-  schedule_db.all(sql, [username], (err, rows) => {
+  // 第一步：查詢 schedule 資料表中學生的所有 course_id
+  const getCoursesSql = 'SELECT course_id FROM schedule WHERE student_id = ?';
+
+  schedule_db.all(getCoursesSql, [username], (err, courseRows) => {
     if (err) {
-      res.status(500).send({ message: '資料庫錯誤' });
-    } else {
-      res.json(rows); // 傳回查詢的課程資料
+      return res.status(500).send({ message: '無法查詢學生選課資料' });
     }
+
+    // 如果學生沒有已選課程，返回空陣列
+    if (courseRows.length === 0) {
+      return res.json([]);
+    }
+
+    // 第二步：根據每個 course_id 查詢 course 資料表的名稱
+    const courses = [];
+    let completed = 0;
+
+    courseRows.forEach((row, index) => {
+      const getCourseNameSql = 'SELECT name FROM course WHERE id = ?';
+
+      db.get(getCourseNameSql, [row.course_id], (err, course) => {
+        if (err) {
+          return res.status(500).send({ message: '無法查詢課程名稱' });
+        }
+
+        // 將課程代碼和名稱加入結果陣列
+        courses.push({ course_id: row.course_id, name: course.name });
+        completed++;
+
+        // 確認所有查詢都完成後返回結果
+        if (completed === courseRows.length) {
+          res.json(courses);
+        }
+      });
+    });
   });
 });
+
 
 app.post('/api/get-schedule', (req, res) => {
   const { username } = req.body;

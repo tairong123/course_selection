@@ -5,40 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>退選</title>
     <style>
+        /* 基本樣式 */
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f4f7f6; /* 柔和背景色 */
         }
         h1 {
             margin-bottom: 20px;
+            color: #333;
+            font-size: 2em;
+            text-align: center;
         }
         .course-table, .drop-course-table {
             border-collapse: collapse;
             width: 100%;
             margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 添加陰影 */
+            border-radius: 8px; /* 圓角 */
+            overflow: hidden;
+            background-color: #fff; /* 白色背景 */
         }
         .course-table th, .course-table td,
         .drop-course-table th, .drop-course-table td {
-            border: 1px solid #000;
-            padding: 8px;
+            border: 1px solid #ddd;
+            padding: 12px;
             text-align: center;
         }
         .course-table th, .drop-course-table th {
-            background-color: #f2f2f2;
+            background-color: #4CAF50;
+            color: #fff;
+            font-weight: bold;
         }
+        .course-table td, .drop-course-table td {
+            color: #555;
+        }
+
+        /* 按鈕樣式 */
         .btn {
             background-color: #4CAF50;
             color: white;
-            padding: 5px 10px;
+            padding: 8px 12px;
             border: none;
             cursor: pointer;
             font-size: 14px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
         .btn:hover {
             background-color: #45a049;
         }
+
+        /* 返回首頁按鈕樣式 */
         .home-btn {
             display: inline-block;
             padding: 10px 20px;
@@ -46,9 +66,24 @@
             color: white;
             text-decoration: none;
             margin-top: 20px;
+            text-align: center;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
         .home-btn:hover {
             background-color: #444;
+        }
+
+        /* 學分文字樣式 */
+        #selectedCredits {
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        /* 增加表格行間距和字體大小 */
+        .course-table td, .drop-course-table td, .course-table th, .drop-course-table th {
+            padding: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -57,6 +92,7 @@
 <div>
     <strong>已選學分: <span id="selectedCredits">0</span></strong>
 </div>
+
 <!-- 課表 -->
 <table class="course-table">
     <thead>
@@ -74,10 +110,12 @@
     </tbody>
 </table>
 
+<!-- 退選課程表格 -->
 <table class="drop-course-table">
     <thead>
     <tr>
         <th>課程代碼</th>
+        <th>課程名稱</th>
         <th>退選</th>
     </tr>
     </thead>
@@ -87,11 +125,10 @@
 </table>
 
 <a href="home.html" class="home-btn">回首頁</a>
-
 <script>
     // Idle timeout to redirect to index.html after 10 minutes of inactivity
     let idleTimer;
-    const idleTimeout = 10000; // 10 minutes in milliseconds
+    const idleTimeout = 100000; // 10 minutes in milliseconds
 
     function resetIdleTimer() {
         clearTimeout(idleTimer);
@@ -127,22 +164,38 @@
         }
     }
 
+    // 建立課表
     function createScheduleTable() {
         const scheduleBody = document.getElementById('scheduleBody');
+
+        // 每節課的時間表
+        const timeSlots = [
+            "8:00 ~ 9:00", "9:00 ~ 10:00", "10:00 ~ 11:00", "11:00 ~ 12:00",
+            "12:00 ~ 13:00", "13:00 ~ 14:00", "14:00 ~ 15:00", "15:00 ~ 16:00",
+            "16:00 ~ 17:00", "17:00 ~ 18:00", "18:00 ~ 19:00", "19:00 ~ 20:00",
+            "20:00 ~ 21:00", "21:00 ~ 22:00"
+        ];
+
         for (let period = 0; period < 14; period++) {
             const row = document.createElement('tr');
+
+            // 節次和時間
             const periodCell = document.createElement('td');
-            periodCell.textContent = `${period + 1}`;
+            periodCell.innerHTML = `<strong>${period + 1}</strong><br><small>${timeSlots[period]}</small>`;
             row.appendChild(periodCell);
+
+            // 每天的課程格子
             for (let day = 0; day < 5; day++) {
                 const cell = document.createElement('td');
                 cell.setAttribute('data-day', day);
                 cell.setAttribute('data-period', period);
                 row.appendChild(cell);
             }
+
             scheduleBody.appendChild(row);
         }
     }
+
 
     async function loadSchedule() {
         try {
@@ -179,6 +232,7 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                 <td>${course.course_id}</td>
+                <td>${course.name}</td> <!-- 顯示課程名稱 -->
                 <td><button onclick="dropCourse('${course.course_id}')" class="btn">退選</button></td>
             `;
                 tbody.appendChild(row);

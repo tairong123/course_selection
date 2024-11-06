@@ -1,39 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>回首頁按鈕範例</title>
+  <title>首頁按鈕範例</title>
   <style>
+    /* 基本樣式 */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    /* 按鈕容器樣式 */
     .button-container {
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
       margin: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 添加陰影 */
+      background-color: #fff;
+      border-radius: 10px;
     }
+
+    /* 按鈕樣式 */
     .home-button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
+      padding: 12px 24px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      background: linear-gradient(45deg, #4CAF50, #45a049);
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      border-radius: 25px;
       text-decoration: none;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 輕微陰影 */
+      transition: all 0.3s ease;
+      cursor: pointer;
+      width: 200px;
     }
+
     .home-button:hover {
-      background-color: #45a049;
+      background: linear-gradient(45deg, #45a049, #3e8e41);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2); /* 增強陰影 */
+      transform: translateY(-2px); /* 略微提升效果 */
     }
   </style>
 </head>
 <body>
 
 <div class="button-container">
-  <!-- 回首頁按鈕 1 -->
+  <h1>首頁導航</h1>
+  <!-- 各種按鈕 -->
   <a href="search.html" class="home-button">查詢頁面</a>
-
-  <!-- 回首頁按鈕 2 -->
   <a href="drop_the_course.html" class="home-button">退選頁面</a>
-
-  <!-- 回首頁按鈕 3 -->
   <a href="add_course.html" class="home-button">加選頁面</a>
   <a href="index.html" class="home-button">登出</a>
 </div>
@@ -41,7 +71,7 @@
 <script>
   // Idle timeout to redirect to index.html after 10 minutes of inactivity
   let idleTimer;
-  const idleTimeout = 10000; // 10 minutes in milliseconds
+  const idleTimeout = 600000; // 10 minutes in milliseconds
 
   function resetIdleTimer() {
     clearTimeout(idleTimer);
@@ -57,7 +87,6 @@
   document.onscroll = resetIdleTimer;
   document.onclick = resetIdleTimer;
 </script>
-
 
 </body>
 </html>
