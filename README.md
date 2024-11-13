@@ -1,64 +1,59 @@
-from gilded_rose import GildedRose, Item
+# -*- coding: utf-8 -*-
 
-def test_normal_item_before_sell_in():
-    items = [Item("Normal Item", sell_in=10, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].sell_in == 9
-    assert items[0].quality == 19
+class GildedRose(object):
+    AGED_BRIE = "Aged Brie"
+    BACKSTAGE_PASS = "Backstage passes to a TAFKAL80ETC concert"
+    SULFURAS = "Sulfuras, Hand of Ragnaros"
+    CONJURED = "Conjured mana cake"
+    MAX_QUALITY = 50
+    MIN_QUALITY = 0
 
-def test_normal_item_after_sell_in():
-    items = [Item("Normal Item", sell_in=0, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].sell_in == -1
-    assert items[0].quality == 18  # 賣出期限後，品質下降2
+    def __init__(self, items):
+        self.items = items
 
-def test_quality_never_negative():
-    items = [Item("Normal Item", sell_in=5, quality=0)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 0  # 品質不會為負數
+    def update_quality(self):
+        for item in self.items:
+            self.update_sell_in(item)
+            self.update_quality_value(item)
 
-def test_aged_brie_increases_in_quality():
-    items = [Item("Aged Brie", sell_in=2, quality=0)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 1  # Aged Brie 隨著時間增加
+    def update_sell_in(self, item):
+        if item.name != self.SULFURAS:
+            item.sell_in -= 1
 
-def test_aged_brie_max_quality():
-    items = [Item("Aged Brie", sell_in=2, quality=50)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 50  # 品質不會超過50
+    def update_quality_value(self, item):
+        if item.name == self.AGED_BRIE:
+            self.increase_quality(item)
+            if item.sell_in < 0:
+                self.increase_quality(item)
 
-def test_sulfuras_quality():
-    items = [Item("Sulfuras, Hand of Ragnaros", sell_in=5, quality=80)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].sell_in == 5  # Sulfuras 不會變過期
-    assert items[0].quality == 80  # Sulfuras 品質不變
+        elif item.name == self.BACKSTAGE_PASS:
+            if item.sell_in < 0:
+                item.quality = self.MIN_QUALITY
+            else:
+                self.increase_quality(item)
+                if item.sell_in < 10:
+                    self.increase_quality(item)
+                if item.sell_in < 5:
+                    self.increase_quality(item)
 
-def test_backstage_passes_increase():
-    items = [Item("Backstage passes to a TAFKAL80ETC concert", sell_in=15, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 21  # 品質加1
+        elif item.name == self.CONJURED:
+            self.decrease_quality(item, 2 if item.sell_in >= 0 else 4)
 
-def test_backstage_passes_increase_by_2():
-    items = [Item("Backstage passes to a TAFKAL80ETC concert", sell_in=10, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 22  # 期限10天或更少時，品質加2
+        elif item.name != self.SULFURAS:
+            self.decrease_quality(item, 1 if item.sell_in >= 0 else 2)
 
-def test_backstage_passes_increase_by_3():
-    items = [Item("Backstage passes to a TAFKAL80ETC concert", sell_in=5, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 23  # 期限5天或更少時，品質加3
+    def increase_quality(self, item, amount=1):
+        item.quality = min(self.MAX_QUALITY, item.quality + amount)
 
-def test_backstage_passes_quality_drops_to_zero():
-    items = [Item("Backstage passes to a TAFKAL80ETC concert", sell_in=0, quality=20)]
-    gilded_rose = GildedRose(items)
-    gilded_rose.update_quality()
-    assert items[0].quality == 0
+    def decrease_quality(self, item, amount=1):
+        item.quality = max(self.MIN_QUALITY, item.quality - amount)
+
+
+class Item:
+    def __init__(self, name, sell_in, quality):
+        self.name = name
+        self.sell_in = sell_in
+        self.quality = quality
+
+    def __repr__(self):
+        return "%s, %s, %s" % (self.name, self.sell_in, self.quality)
