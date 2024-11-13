@@ -1,4 +1,4 @@
-
+https://www.fcu.edu.tw/news/2024111301/
 class GildedRose(object):
     AGED_BRIE = "Aged Brie"
     BACKSTAGE_PASS = "Backstage passes to a TAFKAL80ETC concert"
