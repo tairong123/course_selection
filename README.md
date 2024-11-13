@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 class GildedRose(object):
     AGED_BRIE = "Aged Brie"
