@@ -15,3 +15,8 @@
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification5.png)  
 
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification6.png)  
+
+![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification7.png)  
+
+![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification8.png)  
+
