@@ -1,6 +1,6 @@
-![image](https://github.com/tairong123/course_selection/blob/master/repo/%E9%9C%80%E6%B1%821%20(1).png)  
-
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/%E9%9C%80%E6%B1%821%20(2).png)  
+
+![image](https://github.com/tairong123/course_selection/blob/master/repo/%E9%9C%80%E6%B1%822%20(2).png)  
 
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/use%20case.png)  
 
