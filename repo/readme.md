@@ -4,11 +4,9 @@
 
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/use%20case.png)  
 
-![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification1.png)  
 
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification2.png)  
 
-![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification3.png)  
 
 ![image](https://github.com/tairong123/course_selection/blob/master/repo/Use%20Case%20Specification4.png)  
 
